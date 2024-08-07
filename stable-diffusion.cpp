@@ -501,7 +501,7 @@ public:
         int64_t t1 = ggml_time_ms();
         LOG_INFO("loading model from '%s' completed, taking %.2fs", model_path.c_str(), (t1 - t0) * 1.0f / 1000);
 
-        if (prediction != EPS_PRED) {
+        if (prediction != DEFAULT_PRED) {
             switch (prediction) {
                 case EPS_PRED:
                     LOG_INFO("running in eps-prediction mode");
