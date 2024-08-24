@@ -521,7 +521,7 @@ public:
         } else {
             // check is_using_v_parameterization_for_sd2
             bool is_using_v_parameterization = false;
-            if (version == VERSION_2_x) {
+            if (version == VERSION_SD2) {
                 if (is_using_v_parameterization_for_sd2(ctx)) {
                     is_using_v_parameterization = true;
                 }
@@ -530,21 +530,22 @@ public:
                 is_using_v_parameterization = true;
             }
 
-        if (version == VERSION_SD3_2B) {
-            LOG_INFO("running in FLOW mode");
-            denoiser = std::make_shared<DiscreteFlowDenoiser>();
-        } else if (version == VERSION_FLUX_DEV || version == VERSION_FLUX_SCHNELL) {
-            LOG_INFO("running in Flux FLOW mode");
-            float shift = 1.15f;
-            if (version == VERSION_FLUX_SCHNELL) {
-                shift = 1.0f;  // TODO: validate
+            if (version == VERSION_SD3_2B) {
+                LOG_INFO("running in FLOW mode");
+                denoiser = std::make_shared<DiscreteFlowDenoiser>();
+            } else if (version == VERSION_FLUX_DEV || version == VERSION_FLUX_SCHNELL) {
+                LOG_INFO("running in Flux FLOW mode");
+                float shift = 1.15f;
+                if (version == VERSION_FLUX_SCHNELL) {
+                    shift = 1.0f; // TODO: validate
+                }
+                denoiser = std::make_shared<FluxFlowDenoiser>(shift);
+            } else if (is_using_v_parameterization) {
+                LOG_INFO("running in v-prediction mode");
+                denoiser = std::make_shared<CompVisVDenoiser>();
+            } else {
+                LOG_INFO("running in eps-prediction mode");
             }
-            denoiser = std::make_shared<FluxFlowDenoiser>(shift);
-        } else if (is_using_v_parameterization) {
-            LOG_INFO("running in v-prediction mode");
-            denoiser = std::make_shared<CompVisVDenoiser>();
-        } else {
-            LOG_INFO("running in eps-prediction mode");
         }
 
         if (schedule != DEFAULT) {
