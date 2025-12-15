@@ -318,6 +318,53 @@ struct SimpleScheduler : SigmaScheduler {
     }
 };
 
+struct LinearQuadraticScheduler : SigmaScheduler {
+    std::vector<float> get_sigmas(uint32_t n, float sigma_min, float sigma_max, t_to_sigma_t t_to_sigma) override {
+        std::vector<float> sigmas;
+        sigmas.reserve(n + 1);
+
+        if (n == 1) {
+            sigmas.push_back(sigma_max);
+            sigmas.push_back(0.0f);
+            return sigmas;
+        }
+
+        float threshold_noise = 0.025f;
+        uint32_t linear_steps = n / 2; 
+
+        std::vector<double> raw_schedule;
+        raw_schedule.reserve(n + 1);
+
+        // Part A: Linear Schedule
+        for (uint32_t i = 0; i < linear_steps; ++i) {
+            double val = static_cast<double>(i) * threshold_noise / linear_steps;
+            raw_schedule.push_back(val);
+        }
+
+        double threshold_noise_step_diff = linear_steps - threshold_noise * n;
+        double quadratic_steps = static_cast<double>(n - linear_steps);
+        double quadratic_coef = threshold_noise_step_diff / (static_cast<double>(linear_steps) * quadratic_steps * quadratic_steps);
+        double linear_coef = (threshold_noise / static_cast<double>(linear_steps)) - (2.0 * threshold_noise_step_diff) / (quadratic_steps * quadratic_steps);
+        double c_val = quadratic_coef * static_cast<double>(linear_steps * linear_steps);
+
+        // Part B: Quadratic Schedule
+        for (uint32_t i = linear_steps; i < n; ++i) {
+            double i_d = static_cast<double>(i);
+            double val = quadratic_coef * (i_d * i_d) + linear_coef * i_d + c_val;
+            raw_schedule.push_back(val);
+        }
+
+        raw_schedule.push_back(1.0);
+
+        for (double val : raw_schedule) {
+            float inverted_val = 1.0f - static_cast<float>(val);
+            sigmas.push_back(inverted_val * sigma_max);
+        }
+
+        return sigmas;
+    }
+};
+
 // Close to Beta Scheduler, but increadably simple in code.
 struct SmoothStepScheduler : SigmaScheduler {
     static constexpr float smoothstep(float x) {
@@ -391,6 +438,10 @@ struct Denoiser {
             case SMOOTHSTEP_SCHEDULER:
                 LOG_INFO("get_sigmas with SmoothStep scheduler");
                 scheduler = std::make_shared<SmoothStepScheduler>();
+                break;
+            case LINEAR_QUADRATIC_SCHEDULER:
+                LOG_INFO("get_sigmas with Linear Quadratic scheduler");
+                scheduler = std::make_shared<LinearQuadraticScheduler>();
                 break;
             case LCM_SCHEDULER:
                 LOG_INFO("get_sigmas with LCM scheduler");

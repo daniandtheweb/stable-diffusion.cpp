@@ -2399,6 +2399,7 @@ const char* scheduler_to_str[] = {
     "sgm_uniform",
     "simple",
     "smoothstep",
+    "linear_quadratic",
     "lcm",
 };
 
